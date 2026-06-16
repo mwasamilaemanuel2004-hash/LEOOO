@@ -1,0 +1,29 @@
+# ═══════════════════════════════════════════════════
+# ESTRADE v8 GODMODE — Environment Variables
+# Copy to .env and fill in your values
+# ═══════════════════════════════════════════════════
+
+# ── Supabase (FREE at supabase.com) ──────────────────
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# ── Frontend URL (your Vercel URL) ───────────────────
+FRONTEND_URL=https://estrade-v8.vercel.app
+
+# ── Security ─────────────────────────────────────────
+SECRET_KEY=change-me-to-random-64-char-string-now-please
+ENCRYPTION_KEY=  # Run: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+
+# ── Telegram (optional — for trade alerts) ───────────
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_ADMIN_CHAT_ID=
+
+# ── Stripe (optional — for subscriptions) ───────────
+STRIPE_SECRET_KEY=sk_live_...
+
+# ── Admin ────────────────────────────────────────────
+ADMIN_EMAIL=admin@yourdomain.com
+
+# ── Environment ───────────────────────────────────────
+ENV=production
+PORT=8000
