@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Backtester</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">10-Year Strategy Backtester</h1>
+            <p class="text-gray-600">Analyze and optimize trading strategies with real market data.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">Parameters</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Symbol</label>
+                        <input type="text" id="symbol" value="SPY" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Strategy</label>
+                        <select id="strategy" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                            <option value="sma_crossover">SMA Crossover</option>
+                            <option value="upgraded">Upgraded (SMA + RSI Filter)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Short Window</label>
+                        <input type="number" id="shortWindow" value="50" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Long Window</label>
+                        <input type="number" id="longWindow" value="200" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                    </div>
+                    <button id="runBtn" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded hover:bg-indigo-700">
+                        Run Backtest
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3 space-y-6">
+                <div id="metrics" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <p class="text-sm text-gray-500">Total Return</p>
+                        <p id="totalReturn" class="text-2xl font-bold text-indigo-600">-</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <p class="text-sm text-gray-500">Sharpe Ratio</p>
+                        <p id="sharpeRatio" class="text-2xl font-bold text-green-600">-</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <p class="text-sm text-gray-500">Max Drawdown</p>
+                        <p id="maxDrawdown" class="text-2xl font-bold text-red-600">-</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <p class="text-sm text-gray-500">Final Balance</p>
+                        <p id="finalValue" class="text-2xl font-bold text-gray-800">-</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <canvas id="equityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chart = null;
+
+        async function runBacktest() {
+            const symbol = document.getElementById('symbol').value;
+            const strategy = document.getElementById('strategy').value;
+            const shortWindow = document.getElementById('shortWindow').value;
+            const longWindow = document.getElementById('longWindow').value;
+            const runBtn = document.getElementById('runBtn');
+
+            runBtn.disabled = true;
+            runBtn.innerText = 'Running...';
+
+            try {
+                const response = await fetch('/api/backtest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        symbol,
+                        strategy,
+                        short_window: parseInt(shortWindow),
+                        long_window: parseInt(longWindow)
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    updateUI(data);
+                } else {
+                    alert('Error: ' + data.detail);
+                }
+            } catch (error) {
+                alert('Failed to connect to backend');
+            } finally {
+                runBtn.disabled = false;
+                runBtn.innerText = 'Run Backtest';
+            }
+        }
+
+        function updateUI(data) {
+            const m = data.metrics;
+            document.getElementById('totalReturn').innerText = (m.total_return * 100).toFixed(2) + '%';
+            document.getElementById('sharpeRatio').innerText = m.sharpe_ratio.toFixed(2);
+            document.getElementById('maxDrawdown').innerText = (m.max_drawdown * 100).toFixed(2) + '%';
+            document.getElementById('finalValue').innerText = '$' + m.final_value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            if (chart) chart.destroy();
+            const ctx = document.getElementById('equityChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.chart_data.labels,
+                    datasets: [
+                        { label: 'Equity ($)', data: data.chart_data.equity, borderColor: 'rgb(79, 70, 229)', pointRadius: 0 },
+                        { label: 'Price ($)', data: data.chart_data.price, borderColor: 'rgba(156, 163, 175, 0.5)', pointRadius: 0, yAxisID: 'y1' }
+                    ]
+                },
+                options: { scales: { y1: { position: 'right', grid: { drawOnChartArea: false } } } }
+            });
+        }
+
+        document.getElementById('runBtn').addEventListener('click', runBacktest);
+    </script>
+</body>
+</html>
