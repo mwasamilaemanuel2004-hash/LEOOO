@@ -1,0 +1,8 @@
+pandas
+yfinance
+fastapi
+uvicorn
+matplotlib
+jinja2
+python-multipart
+numpy
