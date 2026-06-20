@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: rexm_postgres
+    environment:
+      POSTGRES_DB: rexm_ai
+      POSTGRES_USER: rexm_user
+      POSTGRES_PASSWORD: secure_password_change_me
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rexm_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: rexm_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - rexm_network
+
+  app:
+    build: .
+    container_name: rexm_app
+    command: gunicorn --bind 0.0.0.0:8000 --workers 4 app:create_app()
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://rexm_user:secure_password_change_me@postgres:5432/rexm_ai
+      - REDIS_URL=redis://redis:6379/0
+      - FLASK_ENV=production
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - .:/app
+    networks:
+      - rexm_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  rexm_network:
+    driver: bridge
