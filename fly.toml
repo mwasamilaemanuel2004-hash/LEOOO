@@ -1,0 +1,27 @@
+[app]
+  primary_region = "ams"
+  processes = { web = "gunicorn --bind 0.0.0.0:8000 --workers 4 app:app" }
+
+[[services]]
+  internal_port = 8000
+  protocol = "tcp"
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+[[services.tcp_checks]]
+  interval = "15s"
+  timeout = "5s"
+  grace_period = "5s"
+  restart_limit = 0
+
+[env]
+  FLASK_ENV = "production"
+  DATABASE_URL = "postgresql://user:password@your-database-host/rexm_ai"
+  REDIS_URL = "redis://your-redis-host:6379/0"
